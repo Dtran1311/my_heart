@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Love Heart</title>
 
 <style>
@@ -22,8 +21,7 @@ html, body {
 
 canvas {
     position: fixed;
-    left: 0;
-    top: 0;
+    inset: 0;
     width: 100%;
     height: 100%;
 }
@@ -35,36 +33,38 @@ canvas {
 <canvas id="canvas"></canvas>
 
 <script>
+"use strict";
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-let W = window.innerWidth;
-let H = window.innerHeight;
-
+let W, H, dpr;
 let particles = [];
 let stars = [];
 let water = [];
 
-const PARTICLE_COUNT = 9000;
-const STAR_COUNT = 350;
-const WATER_COUNT = 1800;
+const PARTICLE_COUNT = 3500;
+const STAR_COUNT = 180;
+const WATER_COUNT = 700;
 
 function resize() {
-
     W = window.innerWidth;
     H = window.innerHeight;
 
-    canvas.width = W;
-    canvas.height = H;
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+
+    canvas.style.width = W + "px";
+    canvas.style.height = H + "px";
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     createHeart();
     createStars();
     createWater();
 }
-
-window.addEventListener("resize", resize);
-
 
 /* =========================
    TRÁI TIM
@@ -75,62 +75,50 @@ function heartX(t) {
 }
 
 function heartY(t) {
-    return (
-        13 * Math.cos(t)
+    return 13 * Math.cos(t)
         - 5 * Math.cos(2 * t)
         - 2 * Math.cos(3 * t)
-        - Math.cos(4 * t)
-    );
+        - Math.cos(4 * t);
 }
 
-
 /* =========================
-   TẠO HẠT TRÁI TIM
+   HẠT TRÁI TIM
 ========================= */
 
 function createHeart() {
-
     particles = [];
 
     const scale =
         Math.min(W, H) *
         (W < 600 ? 0.025 : 0.032);
 
-    const centerX = W / 2;
-    const centerY = H * 0.39;
+    const cx = W / 2;
+    const cy = H * 0.39;
 
     for (let i = 0; i < PARTICLE_COUNT; i++) {
 
-        const t =
-            Math.random() * Math.PI * 2;
+        const t = Math.random() * Math.PI * 2;
+        const r = Math.sqrt(Math.random());
 
-        let r =
-            Math.sqrt(Math.random());
+        const x =
+            heartX(t) * r +
+            (Math.random() - 0.5) * 1.2;
 
-        let x =
-            heartX(t) * r;
-
-        let y =
-            heartY(t) * r;
-
-        x += (Math.random() - 0.5) * 1.2;
-        y += (Math.random() - 0.5) * 1.2;
+        const y =
+            heartY(t) * r +
+            (Math.random() - 0.5) * 1.2;
 
         particles.push({
-
-            x: centerX + x * scale,
-            y: centerY - y * scale,
-
-            baseX: centerX + x * scale,
-            baseY: centerY - y * scale,
+            baseX: cx + x * scale,
+            baseY: cy - y * scale,
 
             size:
                 Math.random() < 0.08
-                ? Math.random() * 2 + 1
-                : Math.random() * 1.2 + 0.25,
+                ? Math.random() * 1.8 + 1
+                : Math.random() * 1.1 + 0.3,
 
             alpha:
-                Math.random() * 0.8 + 0.2,
+                Math.random() * 0.75 + 0.25,
 
             phase:
                 Math.random() * Math.PI * 2,
@@ -141,101 +129,73 @@ function createHeart() {
     }
 }
 
-
 /* =========================
    SAO
 ========================= */
 
 function createStars() {
-
     stars = [];
 
     for (let i = 0; i < STAR_COUNT; i++) {
-
         stars.push({
-
             x: Math.random() * W,
             y: Math.random() * H,
-
-            size:
-                Math.random() * 1.2 + 0.2,
-
-            alpha:
-                Math.random() * 0.6 + 0.1,
-
-            phase:
-                Math.random() * Math.PI * 2
+            size: Math.random() * 1.2 + 0.2,
+            alpha: Math.random() * 0.6 + 0.1,
+            phase: Math.random() * Math.PI * 2
         });
     }
 }
-
 
 /* =========================
    MẶT NƯỚC
 ========================= */
 
 function createWater() {
-
     water = [];
 
     const waterY = H * 0.64;
 
     for (let i = 0; i < WATER_COUNT; i++) {
-
         const x =
             W / 2 +
-            (Math.random() - 0.5)
-            * W * 0.8;
+            (Math.random() - 0.5) * W * 0.8;
 
         const y =
             waterY +
             Math.random() * H * 0.22;
 
         water.push({
-
-            x: x,
-            y: y,
-
-            baseX: x,
-            baseY: y,
-
-            size:
-                Math.random() * 1.5 + 0.2,
-
-            alpha:
-                Math.random() * 0.5 + 0.1,
-
-            phase:
-                Math.random() * Math.PI * 2
+            x,
+            y,
+            size: Math.random() * 1.4 + 0.2,
+            alpha: Math.random() * 0.5 + 0.1,
+            phase: Math.random() * Math.PI * 2
         });
     }
 }
 
-
 /* =========================
-   VẼ SAO
+   SAO
 ========================= */
 
 function drawStars(time) {
 
     ctx.shadowBlur = 0;
+    ctx.fillStyle = "#fff";
 
     for (const star of stars) {
 
         const blink =
             0.4 +
             Math.sin(
-                time * 0.002 +
-                star.phase
+                time * 0.002 + star.phase
             ) * 0.3;
 
-        ctx.beginPath();
+        ctx.globalAlpha =
+            Math.max(0, star.alpha * blink);
 
-        ctx.fillStyle =
-            `rgba(255,255,255,${Math.max(
-                0,
-                star.alpha * blink
-            )})`;
+        ctx.beginPath();
 
         ctx.arc(
             star.x,
@@ -247,114 +207,82 @@ function drawStars(time) {
 
         ctx.fill();
     }
+
+    ctx.globalAlpha = 1;
 }
 
-
 /* =========================
-   HIỆU ỨNG TIM ĐẬP
+   TIM ĐẬP
 ========================= */
 
 function heartbeat(time) {
 
-    const t =
-        (time % 1000) / 1000;
+    const t = (time % 1000) / 1000;
 
     if (t < 0.12) {
-
-        return (
-            1 +
+        return 1 +
             Math.sin(
                 t / 0.12 * Math.PI
-            ) * 0.05
-        );
+            ) * 0.05;
     }
 
     if (t > 0.18 && t < 0.28) {
-
-        return (
-            1 +
+        return 1 +
             Math.sin(
-                (t - 0.18)
-                / 0.1
-                * Math.PI
-            ) * 0.025
-        );
+                (t - 0.18) / 0.1 * Math.PI
+            ) * 0.025;
     }
 
     return 1;
 }
 
-
 /* =========================
-   VẼ TRÁI TIM
+   TRÁI TIM
 ========================= */
 
 function drawHeart(time) {
 
     const cx = W / 2;
     const cy = H * 0.39;
-
-    const beat =
-        heartbeat(time);
+    const beat = heartbeat(time);
 
     for (const p of particles) {
 
         const floatingX =
             Math.cos(
-                time * p.speed +
-                p.phase
+                time * p.speed + p.phase
             ) * 0.7;
 
         const floatingY =
             Math.sin(
-                time * p.speed +
-                p.phase
+                time * p.speed + p.phase
             ) * 1.2;
 
         const x =
             cx +
-            (p.baseX - cx)
-            * beat +
+            (p.baseX - cx) * beat +
             floatingX;
 
         const y =
             cy +
-            (p.baseY - cy)
-            * beat +
+            (p.baseY - cy) * beat +
             floatingY;
 
         const sparkle =
-            0.5 +
+            0.55 +
             Math.sin(
-                time * 0.004 +
-                p.phase
-            ) * 0.5;
+                time * 0.004 + p.phase
+            ) * 0.45;
 
-        const alpha =
+        ctx.globalAlpha =
             p.alpha * sparkle;
 
+        ctx.fillStyle =
+            p.size > 1.4
+            ? "#ff96cd"
+            : "#ff469b";
+
         ctx.beginPath();
-
-        if (p.size > 1.4) {
-
-            ctx.fillStyle =
-                `rgba(255,150,205,${alpha})`;
-
-            ctx.shadowBlur = 14;
-
-            ctx.shadowColor =
-                "rgba(255,40,140,0.9)";
-
-        } else {
-
-            ctx.fillStyle =
-                `rgba(255,70,155,${alpha})`;
-
-            ctx.shadowBlur = 5;
-
-            ctx.shadowColor =
-                "rgba(255,20,120,0.7)";
-        }
 
         ctx.arc(
             x,
@@ -367,29 +295,30 @@ function drawHeart(time) {
         ctx.fill();
     }
 
-    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
 }
 
-
 /* =========================
-   PHẢN CHIẾU TRÁI TIM
+   PHẢN CHIẾU
 ========================= */
 
 function drawReflection(time) {
 
-    const waterY =
-        H * 0.64;
+    const waterY = H * 0.64;
 
-    for (const p of particles) {
+    for (
+        let i = 0;
+        i < particles.length;
+        i += 2
+    ) {
+
+        const p = particles[i];
 
         const distance =
             waterY - p.baseY;
 
-        if (distance <= 0) {
-            continue;
-        }
-
-        if (distance > H * 0.25) {
+        if (distance <= 0 ||
+            distance > H * 0.25) {
             continue;
         }
 
@@ -404,25 +333,19 @@ function drawReflection(time) {
                 y * 0.04 +
                 time * 0.003
             ) *
-            (2 + depth * 14);
+            (2 + depth * 10);
 
         const x =
             p.baseX + wave;
 
-        const alpha =
+        ctx.globalAlpha =
             p.alpha *
             (1 - depth) *
-            0.35;
+            0.3;
+
+        ctx.fillStyle = "#ff64af";
 
         ctx.beginPath();
-
-        ctx.fillStyle =
-            `rgba(255,100,175,${alpha})`;
-
-        ctx.shadowBlur = 4;
-
-        ctx.shadowColor =
-            "rgba(255,70,160,0.5)";
 
         ctx.arc(
             x,
@@ -435,30 +358,27 @@ function drawReflection(time) {
         ctx.fill();
     }
 
-    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
 }
 
-
 /* =========================
-   MẶT NƯỚC
+   NƯỚC
 ========================= */
 
 function drawWater(time) {
 
     for (const p of water) {
 
-        const wave =
+        const x =
+            p.x +
             Math.sin(
-                p.baseX * 0.02 +
+                p.x * 0.02 +
                 time * 0.002 +
                 p.phase
             ) * 4;
 
-        const x =
-            p.baseX + wave;
-
         const y =
-            p.baseY +
+            p.y +
             Math.sin(
                 time * 0.002 +
                 p.phase
@@ -471,20 +391,15 @@ function drawWater(time) {
                 p.phase
             ) * 0.5;
 
+        ctx.globalAlpha =
+            Math.max(
+                0,
+                p.alpha * sparkle
+            );
+
+        ctx.fillStyle = "#64e6ff";
+
         ctx.beginPath();
-
-        ctx.fillStyle =
-            `rgba(100,230,255,${
-                Math.max(
-                    0,
-                    p.alpha * sparkle
-                )
-            })`;
-
-        ctx.shadowBlur = 7;
-
-        ctx.shadowColor =
-            "rgba(50,220,255,0.7)";
 
         ctx.arc(
             x,
@@ -497,9 +412,8 @@ function drawWater(time) {
         ctx.fill();
     }
 
-    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
 }
-
 
 /* =========================
    CHỮ
@@ -507,11 +421,8 @@ function drawWater(time) {
 
 function drawText(time) {
 
-    const centerX =
-        W / 2;
-
-    const centerY =
-        H * 0.69;
+    const cx = W / 2;
+    const cy = H * 0.69;
 
     const radiusX =
         Math.min(W, H) * 0.18;
@@ -519,8 +430,7 @@ function drawText(time) {
     const radiusY =
         Math.min(W, H) * 0.045;
 
-    const text =
-        "Anh yêu em • ";
+    const text = "Anh yêu em • ";
 
     const fontSize =
         Math.max(
@@ -536,16 +446,10 @@ function drawText(time) {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
-    ctx.fillStyle =
-        "rgba(255,255,255,0.9)";
+    ctx.fillStyle = "#fff";
+    ctx.globalAlpha = 0.9;
 
-    ctx.shadowBlur = 8;
-
-    ctx.shadowColor =
-        "rgba(255,255,255,0.7)";
-
-    const repeated =
-        text.repeat(5);
+    const repeated = text.repeat(5);
 
     const offset =
         time * 0.00025;
@@ -557,19 +461,19 @@ function drawText(time) {
     ) {
 
         const angle =
-            i / repeated.length
-            * Math.PI * 2
-            + offset;
+            i / repeated.length *
+            Math.PI * 2 +
+            offset;
 
         const x =
-            centerX +
-            Math.cos(angle)
-            * radiusX;
+            cx +
+            Math.cos(angle) *
+            radiusX;
 
         const y =
-            centerY +
-            Math.sin(angle)
-            * radiusY;
+            cy +
+            Math.sin(angle) *
+            radiusY;
 
         ctx.save();
 
@@ -590,15 +494,21 @@ function drawText(time) {
 
     ctx.restore();
 
-    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
 }
-
 
 /* =========================
    ANIMATION
 ========================= */
 
-function animate(timestamp) {
+function animate(time) {
+
+    ctx.clearRect(
+        0,
+        0,
+        W,
+        H
+    );
 
     ctx.fillStyle = "#000";
 
@@ -609,28 +519,27 @@ function animate(timestamp) {
         H
     );
 
-    drawStars(timestamp);
-
-    drawReflection(timestamp);
-
-    drawWater(timestamp);
-
-    drawText(timestamp);
-
-    drawHeart(timestamp);
+    drawStars(time);
+    drawReflection(time);
+    drawWater(time);
+    drawText(time);
+    drawHeart(time);
 
     requestAnimationFrame(animate);
 }
-
 
 /* =========================
    START
 ========================= */
 
+window.addEventListener(
+    "resize",
+    resize
+);
+
 resize();
 
 requestAnimationFrame(animate);
-
 </script>
 
 </body>
